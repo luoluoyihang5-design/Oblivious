@@ -1,0 +1,35 @@
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; user-select: none; }
+body { padding: 8px; font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; }
+button { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer; touch-action: none; -webkit-user-drag: none; }
+#motion { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; transform-origin: 50% 90%; }
+.orb { border-radius: 50%; background: #fff; box-shadow: 0 2px 7px #15152126; }
+.orb:hover { box-shadow: 0 0 0 2px #c6b3e0, 0 2px 7px #15152126; }
+.orb img { width: 75%; height: 75%; object-fit: contain; pointer-events: none; }
+.pet img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 2px 2px #57446c22); transform-origin: 50% 95%; }
+.pet.breathing img { animation: breathe 4.5s ease-in-out infinite; }
+button.dragging #motion { transform: scale(.97, .98); }
+.pet[data-action=sleep] #motion { animation: sleeping 3.4s ease-in-out infinite; }
+.pet[data-action=land] #motion { animation: land .8s ease-out both; }
+.docked { padding: 0; }
+.docked .orb { border: 0; border-radius: 0; background: transparent; box-shadow: none; overflow: hidden; }
+.docked .orb img { position: absolute; width: 200%; height: 100%; max-width: none; flex-shrink: 0; }
+.docked.left .orb img { right: 0; }
+.docked.right .orb img { left: 0; }
+.docked .pet img { object-fit: fill; filter: none; }
+.docked.right .pet img { transform: scaleX(-1); }
+button:focus-visible { outline: 2px solid #9d87bd; outline-offset: -3px; }
+button.dragging { cursor: grabbing; }
+#click-effect { position: absolute; inset: 15%; border: 2px solid #c4a2e6; border-radius: 50%; opacity: 0; pointer-events: none; }
+#click-effect.spark { animation: sparkle .65s ease-out both; }
+#click-effect::before, #click-effect::after { content: '✦'; position: absolute; color: #a978cd; font-size: 17px; top: 4%; right: 5%; }
+#click-effect::after { top: auto; right: auto; bottom: 10%; left: -8%; font-size: 12px; }
+#toast { position: fixed; bottom: 7px; left: 7px; right: 7px; padding: 6px; border-radius: 8px; background: #25212feb; color: #fff; font-size: 11px; text-align: center; pointer-events: none; }
+[hidden] { display: none !important; }
+@keyframes breathe { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-.7px) scale(1.006,1.012); } }
+@keyframes sleeping { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px) scale(1.01,.99); } }
+@keyframes land { 0% { transform: translateY(-3px) scale(.98,1.02); } 35% { transform: scale(1.035,.96); } 65% { transform: scale(.99,1.015); } 100% { transform: scale(1); } }
+@keyframes sparkle { 0% { opacity: .8; transform: scale(.7); } 100% { opacity: 0; transform: scale(1.25); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+.pet[data-action=sleep]::after { content: 'Zzz'; position: absolute; top: 9%; left: 64%; font: 600 clamp(14px, 9vw, 25px)/1.2 'Segoe UI', sans-serif; letter-spacing: 2px; color: #8b70a7; text-shadow: 0 1px 2px #fff; pointer-events: none; animation: sleep-zzz 2.2s ease-in-out infinite; }
+@keyframes sleep-zzz { 0% { opacity: 0; transform: translate(-3px, 8px) scale(.8); } 30% { opacity: .95; } 100% { opacity: 0; transform: translate(8px, -12px) scale(1.1); } }

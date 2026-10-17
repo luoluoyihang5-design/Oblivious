@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"><title>知知 · 气泡</title><link rel="stylesheet" href="bubble.css"></head>
+<body><section class="bubble" aria-label="知知气泡">
+  <header><strong id="bubble-title">知知</strong><button data-command="close" aria-label="关闭气泡" title="关闭">×</button></header>
+  <div id="bubble-content" role="status" aria-live="polite"></div>
+  <footer><div><button data-command="quota">额度</button><button data-command="quote">说句话</button></div><button id="refresh" data-command="quota" title="刷新额度" aria-label="刷新额度">↻</button></footer>
+</section><script type="module" src="../src/bubble.js"></script></body></html>

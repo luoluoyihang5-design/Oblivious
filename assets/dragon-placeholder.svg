@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="284" viewBox="0 0 240 284">
+<defs>
+ <linearGradient id="hair" x2=".6" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#ccc2ef"/></linearGradient>
+ <linearGradient id="wing" x2="0" y2="1"><stop stop-color="#f4edff"/><stop offset="1" stop-color="#c1a7e7"/></linearGradient>
+ <linearGradient id="dress" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e0d8f1"/></linearGradient>
+</defs>
+<g stroke="#9990b9" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+ <!-- Transparent, deliberately separate wings and tail: no circular avatar mask. -->
+ <path fill="url(#wing)" d="M76 158Q31 122 13 137L20 172L8 192Q34 182 39 204Q51 181 79 191Z"/>
+ <path fill="none" d="M23 150L63 179M20 173L63 179M39 194L63 179"/>
+ <path fill="url(#wing)" d="M161 155Q201 122 225 134L216 167L234 188Q207 178 202 202Q184 179 163 190Z"/>
+ <path fill="none" d="M215 146L180 177M217 167L180 177M202 191L180 177"/>
+ <path fill="url(#hair)" d="M147 235Q202 266 215 229Q221 216 214 206Q239 219 226 248Q210 281 154 259Z"/>
+ <path fill="url(#hair)" d="M64 95Q48 127 48 177L40 225Q54 233 65 221L59 245Q85 250 93 221L152 222Q167 247 190 240L181 217Q192 223 199 214L187 173Q188 119 172 95Z"/>
+ <path fill="#eee8fa" d="M93 241L94 266Q103 275 112 266L114 242M128 242L130 268Q139 276 147 266L147 241"/>
+ <path fill="#5d526f" d="M94 263L93 273Q106 280 114 271L112 263M131 264L128 274Q143 280 149 271L146 263"/>
+ <path fill="url(#dress)" d="M98 163L140 163L154 204L173 241Q119 259 72 240L89 201Z"/>
+ <path fill="#cab7ea" d="M99 164L118 186L138 164L137 185L119 197L100 185Z"/>
+ <path fill="#fff" d="M88 176L68 201Q60 211 67 217Q75 223 84 210L99 192M147 177L167 196L183 183Q192 182 192 190Q188 208 171 213L143 194"/>
+ <path fill="none" d="M106 207L97 237M133 207L145 238M119 205L119 240"/>
+ <path fill="#ffedf0" d="M71 112L54 100Q49 116 67 125M171 111L188 100Q194 115 174 125"/>
+ <path fill="#fff3f1" d="M65 88Q62 145 93 155Q120 173 148 155Q180 142 176 90Z"/>
+ <path fill="url(#hair)" d="M60 108Q43 62 73 45Q118 17 160 45Q190 61 181 111L163 103L157 71Q147 92 128 99L132 74Q120 97 105 101L104 80Q94 100 79 104L77 80L70 109Z"/>
+ <path fill="#fff" d="M76 52Q47 44 54 11Q64 29 85 35L87 50M151 47Q184 39 180 10Q166 27 146 33L143 46"/>
+ <path fill="none" d="M57 27L70 39M176 27L162 39"/>
+ <path fill="#7d65ae" stroke="none" d="M81 113Q92 104 102 113L101 131Q91 140 82 130ZM138 113Q150 104 160 113L159 130Q149 140 139 131Z"/>
+ <path fill="#ceb6ef" stroke="none" d="M85 124H98V130Q91 136 85 129M142 124H155V130Q148 135 142 130"/>
+ <circle fill="#fff" stroke="none" cx="88" cy="115" r="4"/><circle fill="#fff" stroke="none" cx="146" cy="115" r="4"/>
+ <path fill="none" d="M113 143Q120 150 127 142"/>
+ <ellipse fill="#efb8cd" opacity=".6" stroke="none" cx="79" cy="137" rx="9" ry="4"/><ellipse fill="#efb8cd" opacity=".6" stroke="none" cx="163" cy="137" rx="9" ry="4"/>
+ <g transform="translate(163 67)" fill="#fff" stroke="#8e7aa9" stroke-width="1.6"><path d="M-7-5L0-10L8-5V5L0 10L-8 5V-5M-7-5L7 5M0-10V0L-8 5M8-5L0 0V10"/></g>
+</g>
+</svg>

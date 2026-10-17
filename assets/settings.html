@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>知知桌面伴侣 · 设置</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">知知<span>桌面伴侣</span></div>
+    <nav role="tablist" aria-label="偏好设置" aria-orientation="vertical">
+      <button id="tab-character" class="nav-item" role="tab" aria-selected="true" aria-controls="panel-character" data-tab="character"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>形象</button>
+      <button id="tab-style" class="nav-item" role="tab" aria-selected="false" aria-controls="panel-style" tabindex="-1" data-tab="style"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>样式</button>
+      <button id="tab-settings" class="nav-item" role="tab" aria-selected="false" aria-controls="panel-settings" tabindex="-1" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9Z"/><circle cx="12" cy="12" r="3"/></svg>设置</button>
+      <button id="tab-about" class="nav-item" role="tab" aria-selected="false" aria-controls="panel-about" tabindex="-1" data-tab="about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>关于</button>
+    </nav>
+    <div class="sidebar-foot">ChatGPT Companion<span>v0.4.5 · 非官方</span></div>
+  </aside>
+  <main>
+    <section id="panel-character" class="panel" role="tabpanel" aria-labelledby="tab-character" tabindex="0">
+      <header><h1>形象</h1><span class="current-mode" data-current-mode>小龙娘桌宠</span></header>
+      <div class="choices" role="group" aria-label="选择形象">
+        <button class="choice" data-mode="orb" aria-pressed="false"><span class="choice-art orb-stage"><span class="demo-orb"><img src="chatgpt.png" alt="经典悬浮球"></span></span><span class="choice-copy"><strong>经典悬浮球</strong><span class="radio" aria-hidden="true"></span></span></button>
+        <button class="choice" data-mode="pet" aria-pressed="true"><span class="choice-art pet-stage"><img id="pet-preview" src="dragon-idle.gif" alt="小龙娘桌宠"></span><span class="choice-copy"><strong>小龙娘桌宠</strong><span class="radio" aria-hidden="true"></span></span></button>
+      </div>
+      <div class="setting-row import-row"><div><h2 id="pet-label">自定义待机样式</h2><p>PNG / WebP / GIF · 最大 8 MB</p></div><div class="actions"><button id="reset-pet" class="text-button" hidden>恢复内置</button><button id="import-pet" class="secondary">导入图片</button></div></div>
+    </section>
+    <section id="panel-style" class="panel" role="tabpanel" aria-labelledby="tab-style" tabindex="0" hidden>
+      <header><h1>样式</h1><span class="current-mode" data-current-mode>小龙娘桌宠</span></header>
+      <div class="style-layout">
+        <div class="live-preview"><span class="preview-label">预览</span><img id="style-preview" src="dragon-idle.gif" alt="当前形象预览"><span class="preview-ground" aria-hidden="true"></span></div>
+        <div class="style-controls">
+          <div class="slider-setting"><div class="slider-heading"><label id="size-label" for="size">桌宠尺寸</label><output id="size-value" for="size">180 px</output></div><input id="size" type="range" min="96" max="280" value="180"></div>
+          <div class="slider-setting"><div class="slider-heading"><label id="opacity-label" for="opacity">不透明度</label><output id="opacity-value" for="opacity">100%</output></div><input id="opacity" type="range" min="20" max="100" value="100"></div>
+          <div id="pet-behavior"><label class="switch-row"><span>轻柔呼吸</span><input type="checkbox" id="breathing" checked></label><label class="switch-row"><span>拖拽动画</span><input type="checkbox" id="dragAnimation"></label></div>
+          <p id="animation-note" class="note" hidden>自定义图片使用原始动画。</p>
+        </div>
+      </div>
+    </section>
+    <section id="panel-settings" class="panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" hidden>
+      <header><h1>设置</h1></header>
+      <div class="settings-group"><h2 class="group-title">桌面行为</h2><label class="switch-row"><span>边缘吸附</span><input type="checkbox" id="snapToEdge" checked></label><label class="switch-row"><span>始终置顶</span><input type="checkbox" id="alwaysOnTop" checked></label><label class="switch-row"><span>开机启动</span><input type="checkbox" id="launchAtLogin"></label><p id="startup-note" class="note" hidden>需使用打包后的 Windows 版本。</p><div class="setting-row"><span>挂件位置</span><button id="reset-position" class="text-button">重置位置</button></div></div>
+      <div class="settings-group"><h2 class="group-title">互动与气泡</h2><div class="setting-row"><span>左键单击</span><span class="field-note">打开 / 隐藏 ChatGPT</span></div><label class="setting-row" for="quoteDoubleAction"><span>台词期间再次双击</span><select id="quoteDoubleAction"><option value="next">播放下一句</option><option value="quota">返回额度</option></select></label><label class="switch-row"><span>点击动效</span><input type="checkbox" id="clickEffects" checked></label><label class="switch-row"><span>台词气泡</span><input type="checkbox" id="bubbleEnabled" checked></label><label class="switch-row"><span>额度气泡</span><input type="checkbox" id="quotaEnabled" checked></label><label class="setting-row" for="bubbleSeconds"><span>气泡显示时长</span><span><input id="bubbleSeconds" type="number" min="1" max="60" value="5" aria-label="气泡显示秒数"> 秒</span></label><div class="setting-row"><span>Codex 额度</span><button id="test-usage" class="text-button">查看额度</button></div><p class="note">双击：额度 → 台词。两种气泡共用显示时长。</p></div>
+      <div class="settings-group quote-settings"><div class="quote-toolbar"><h2 class="group-title">台词 <span id="quote-count"></span></h2><div class="actions"><button id="reset-quotes" class="text-button">恢复默认</button><button id="add-quote" class="secondary">添加</button></div></div><div id="quote-list" aria-label="逐句编辑台词"></div><p class="note">勾选的句子参与播放。恢复默认前自动备份。</p></div>
+      <div class="settings-group connection"><h2 class="group-title">ChatGPT</h2><p id="app-path">自动识别已安装的 ChatGPT</p><div class="connection-actions"><div class="actions"><button id="choose-app" class="secondary">选择程序</button><button id="auto-app" class="text-button" hidden>恢复自动识别</button></div><button id="open-app" class="primary">打开 ChatGPT ↗</button></div></div>
+      <p class="privacy">本地运行 · 不读取聊天记录 · 无需 API Key</p>
+    </section>
+    <section id="panel-about" class="panel" role="tabpanel" aria-labelledby="tab-about" tabindex="0" hidden>
+      <header><h1>关于</h1><span class="current-mode">v0.4.5</span></header>
+      <div class="about-intro"><img src="dragon-idle.png" alt="知知"><div><h2>知知桌面伴侣</h2><p>ChatGPT Companion · 非官方独立项目</p></div></div>
+      <div class="settings-group"><label class="setting-row" for="aboutAuthor"><span>制作者</span><input id="aboutAuthor" type="text" maxlength="200" placeholder="琉璃kisaki"></label><label class="setting-row" for="aboutContact"><span>联系方式</span><input id="aboutContact" type="text" maxlength="200" placeholder="b站 琉璃kisaki · liulikisaki@gmail.com"></label><label class="setting-row" for="aboutWebsite"><span>项目主页</span><input id="aboutWebsite" type="url" maxlength="200" placeholder="GitHub 仓库链接"></label><div class="setting-row"><span>GitHub</span><button id="open-project-home" class="text-button">打开项目仓库 ↗</button></div></div>
+      <div class="settings-group"><div class="setting-row"><h2>运行环境与占用</h2><button id="refresh-info" class="text-button">刷新</button></div><p id="runtime-info" class="note">点击刷新查看</p><p id="resource-info" class="note"></p></div>
+      <div class="settings-group about-credits"><h2 class="group-title">来源与许可</h2><p>额度读取、33 句内置台词：T7moris / GPT-Niang</p><p>互动设计参考：bailong-desktop-pet</p><p>部分上游台词：MeteorNOX / DeepSeek-Balance-Whale-Widget</p><p>代码许可与素材说明：随包 THIRD-PARTY.md、LICENSE</p><p>ChatGPT 名称与图标属于 OpenAI。</p></div>
+    </section>
+    <footer><span id="status" role="status" aria-live="polite">设置自动保存</span></footer>
+  </main>
+  <script type="module" src="../src/settings.js"></script>
+</body>
+</html>

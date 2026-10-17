@@ -1,0 +1,27 @@
+name: Build macOS
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:mac -- ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZhizhiCompanion-macos-${{ matrix.arch }}
+          path: dist/ZhizhiCompanion-*-macos-${{ matrix.arch }}.zip
+          if-no-files-found: error

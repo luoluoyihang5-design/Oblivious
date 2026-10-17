@@ -1,0 +1,6 @@
+.live-preview[data-preview-action=sleep] #style-preview { animation: preview-sleep 3.4s ease-in-out infinite; }
+.live-preview[data-preview-action=sleep]::after { content: 'Zzz'; position: absolute; top: 27%; left: 62%; font: 600 22px/1.2 'Segoe UI', sans-serif; letter-spacing: 2px; color: #8b70a7; pointer-events: none; animation: sleep-zzz 2.2s ease-in-out infinite; }
+#style-preview { transform-origin: 50% 95%; }
+@keyframes preview-sleep { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+@keyframes sleep-zzz { 0% { opacity: 0; transform: translate(-3px, 8px) scale(.8); } 30% { opacity: .95; } 100% { opacity: 0; transform: translate(8px, -12px) scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { #style-preview, .live-preview::after { animation: none !important; } }
