@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { actions, chooseQuote, bubbleBounds } from '../src/pet-behavior.mjs';
+import { actions, actionForVisibility, chooseQuote, bubbleBounds } from '../src/pet-behavior.mjs';
 import { normalize, patchPreferences } from '../src/model.mjs';
 import { createUsageService } from '../src/usage-service.mjs';
 import { normalizeLimits, freshness, readUsage } from '../src/vendor/gpt-niang/usage.mjs';
@@ -17,6 +17,14 @@ test('only right-menu actions remain and have bounded durations', () => {
   }
   assert.equal(chooseQuote('wave', '  第一行\n\n第二行', () => .9), '第二行');
   assert.ok(chooseQuote('not-an-action').length > 0);
+});
+test('persistent sleep survives macOS page occlusion and clears on wake', () => {
+  let action = actionForVisibility('', true, false);
+  assert.equal(action, 'sleep');
+  action = actionForVisibility(action, true, true);
+  assert.equal(actionForVisibility(action, true, false), 'sleep');
+  assert.equal(actionForVisibility(action, false, false), '');
+  assert.equal(actionForVisibility('wave', false, true), '');
 });
 test('new preference migration, validation and quote limits', () => {
   const migrated = normalize({ version: 2, petSize: 200 });

@@ -3,6 +3,10 @@ export const actions = Object.freeze({
   wave: { label: '招手', duration: 2400, art: 'dragon-wave.gif', enabled: false },
   sleep: { label: '休眠', duration: 7000, art: 'dragon-sleep.png' },
 });
+export function actionForVisibility(action, sleeping, hidden) {
+  if (sleeping) return 'sleep';
+  return hidden || action === 'sleep' ? '' : action;
+}
 const phrases = Object.freeze({
   wave: ['我在这里。', '回来啦，今天也一起加油。'],
   sleep: ['我眯一会儿，有事叫我。'],
