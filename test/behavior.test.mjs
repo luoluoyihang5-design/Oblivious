@@ -10,6 +10,8 @@ import { EventEmitter } from 'node:events';
 test('only right-menu actions remain and have bounded durations', () => {
   assert.deepEqual(Object.keys(actions), ['wave', 'sleep']);
   assert.equal(actions.wave.art, 'dragon-wave.gif');
+  assert.equal(actions.wave.enabled, false);
+  assert.equal(actions.sleep.label, '休眠');
   for (const [key, action] of Object.entries(actions)) {
     assert.ok(action.duration >= 500 && action.duration <= 8000);
   }

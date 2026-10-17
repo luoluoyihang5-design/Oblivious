@@ -26,11 +26,11 @@ function setArt(src) {
     if (desiredArt === src) { toast.textContent = '动作图片加载失败'; toast.hidden = false; }
   });
 }
-for (const file of ['dragon-idle.gif', 'dragon-wave.gif', 'dragon-sleep.png', 'dragon-drag.gif', 'dragon-peek.gif']) {
+for (const file of ['dragon-idle.gif', 'dragon-sleep.png', 'dragon-drag.gif', 'dragon-peek.gif']) {
   void prepareArt(new URL('../assets/' + file, import.meta.url).href).catch(() => {});
 }
-function playAction(name, feedback = true) {
-  if (!Object.hasOwn(actions, name) || !current || current.isDragging) return;
+function playAction(name, feedback = true, persistent = false) {
+  if (!Object.hasOwn(actions, name) || actions[name].enabled === false || !current || current.isDragging) return;
   clearTimeout(actionTimer);
   activeAction = name; actionSerial++;
   render(current);
@@ -38,7 +38,7 @@ function playAction(name, feedback = true) {
     const effect = document.querySelector('#click-effect');
     effect.classList.remove('spark'); void effect.offsetWidth; effect.classList.add('spark');
   }
-  actionTimer = setTimeout(() => { activeAction = ''; render(current); }, actions[name].duration);
+  if (!persistent) actionTimer = setTimeout(() => { activeAction = ''; render(current); }, actions[name].duration);
 }
 const canvas = document.createElement('canvas'), context = canvas.getContext('2d', { willReadFrequently: true });
 let dockedLogo = '';
@@ -120,10 +120,14 @@ function finish(event, cancel) {
 button.addEventListener('pointerup', event => finish(event, false));
 button.addEventListener('pointercancel', event => finish(event, true));
 button.addEventListener('lostpointercapture', event => finish(event, true));
-button.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); void api.open(); } });
+button.addEventListener('keydown', event => { api.activity(); if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); void api.open(); } });
+button.addEventListener('wheel', () => api.activity(), { passive: true });
 window.addEventListener('contextmenu', event => { event.preventDefault(); if (visibleAt(event.clientX, event.clientY)) api.menu(); });
 api.onState(render);
-api.onAction(({ name }) => playAction(name));
+api.onAction(({ name, persistent }) => {
+  if (name === null) { clearTimeout(actionTimer); activeAction = ''; if (current) render(current); }
+  else playAction(name, !persistent, persistent);
+});
 document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(actionTimer); activeAction = ''; } else if (current) render(current); });
 reducedMotion.addEventListener('change', () => { if (current) render(current); });
 api.onStatus(({ message }) => {

@@ -6,6 +6,7 @@ export const defaults = Object.freeze({
   launchAtLogin: false, dragAnimation: false, breathing: true,
   dockEdge: null, position: null, customPet: false, appPath: '',
   idleActions: false, clickEffects: true, bubbleEnabled: true, quotaEnabled: true,
+  autoSleepEnabled: false, autoSleepMinutes: 5,
   bubbleSeconds: 5, customQuotes: '', quoteDoubleAction: 'next', quotes: defaultQuotes,
   aboutAuthor: '琉璃kisaki', aboutContact: 'b站 琉璃kisaki · liulikisaki@gmail.com', aboutWebsite: 'https://github.com/luoluoyihang5-design/Oblivious',
 });
@@ -30,12 +31,14 @@ export function normalize(raw = {}) {
   if (raw.position && Number.isFinite(raw.position.x) && Number.isFinite(raw.position.y)) result.position = { x: Math.round(raw.position.x), y: Math.round(raw.position.y) };
   // Retain the old key for preference compatibility, but never re-enable random actions.
   result.idleActions = false;
+  result.autoSleepEnabled = typeof raw.autoSleepEnabled === 'boolean' ? raw.autoSleepEnabled : false;
+  result.autoSleepMinutes = typeof raw.autoSleepMinutes === 'number' && Number.isFinite(raw.autoSleepMinutes) ? Math.round(clamp(raw.autoSleepMinutes, 1, 1440)) : 5;
   return result;
 }
 export function patchPreferences(current, patch) {
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('设置格式不正确');
-  const numeric = ['orbSize', 'petSize', 'opacity', 'orbOpacity', 'petOpacity', 'bubbleSeconds'];
-  const allowed = ['mode', ...numeric, 'alwaysOnTop', 'snapToEdge', 'launchAtLogin', 'dragAnimation', 'breathing', 'idleActions', 'clickEffects', 'bubbleEnabled', 'quotaEnabled', 'quoteDoubleAction', 'quotes', 'customQuotes', 'aboutAuthor', 'aboutContact', 'aboutWebsite'];
+  const numeric = ['orbSize', 'petSize', 'opacity', 'orbOpacity', 'petOpacity', 'bubbleSeconds', 'autoSleepMinutes'];
+  const allowed = ['mode', ...numeric, 'autoSleepEnabled', 'alwaysOnTop', 'snapToEdge', 'launchAtLogin', 'dragAnimation', 'breathing', 'idleActions', 'clickEffects', 'bubbleEnabled', 'quotaEnabled', 'quoteDoubleAction', 'quotes', 'customQuotes', 'aboutAuthor', 'aboutContact', 'aboutWebsite'];
   if (Object.keys(patch).some(key => !allowed.includes(key))) throw new Error('不支持的设置项');
   for (const [key, value] of Object.entries(patch)) {
     if (['aboutAuthor', 'aboutContact', 'aboutWebsite'].includes(key)) {

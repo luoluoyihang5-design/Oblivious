@@ -1,0 +1,113 @@
+diff --git a/MACOS.md b/MACOS.md
+index 64bccc9..309f1bc 100644
+--- a/MACOS.md
++++ b/MACOS.md
+@@ -8,7 +8,7 @@
+ - 原生菜单栏“知知”入口、Dock 中的设置窗口、Spaces / 全屏空间中的桌宠与气泡。
+ - 原生应用/编辑/窗口菜单，保留 Cmd+Q、复制粘贴等系统快捷键，界面字体优先采用系统字体。
+ - 打包版登录启动，采用 macOS 自己的登录项设置。
+-- 额度读取自动寻找 /Applications/Codex.app、用户 Applications/Codex.app 和 PATH 中的 Codex CLI；无需 Windows PowerShell。
++- 额度读取自动寻找 /Applications/Codex.app、/Applications/ChatGPT.app、用户 Applications 中的对应应用以及 PATH 中的 Codex CLI；无需 Windows PowerShell。
+ - 偏好使用 Electron 的用户数据目录，Windows 与 Mac 各自保存。
+ 
+ ## 本地运行
+@@ -49,6 +49,6 @@ npm run build:mac -- x64
+ 
+ ## 验证边界
+ 
+-当前执行环境是 Windows。跨平台参数传递、平台分支、台词/点击/气泡等共享逻辑已经测试，Windows 实机已验证。Mac 适配包含代码和构建流程，**尚未在真实 Mac 上运行，也没有在本机产出或验收 Mac .app**。
++此前已在 Windows 验证共享逻辑。2026-10-17 在 macOS 26.7 / Apple Silicon 上运行了 28 项测试，完成 arm64 `.app` 打包和本地签名验证，并实测应用启动、设置窗口、桌宠/经典悬浮球切换及右键菜单。macOS JXA 唤起脚本返回成功；只读 Codex 额度查询找到了安装在 ChatGPT.app 中的 CLI，并取得两个额度窗口。
+ 
+-在 Mac 交付前仍需验证：AppKit 实际桥接、ChatGPT 激活/隐藏、菜单栏、多屏/Spaces、登录项和签名后的启动。Windows 上不伪造这些结果。
++仍需在不同 Mac 环境逐项验证 ChatGPT 显示/隐藏的视觉效果、多屏/Spaces 和登录项。此包只有本地临时签名，没有 Developer ID 签名或 Apple 公证。
+diff --git a/src/chatgpt-mac.js b/src/chatgpt-mac.js
+index 57d4905..4b8bb28 100644
+--- a/src/chatgpt-mac.js
++++ b/src/chatgpt-mac.js
+@@ -17,6 +17,7 @@ function run(argv) {
+     }
+   }
+   if (!target) return 'not-running';
++  // JXA invokes zero-argument Objective-C selectors when their properties are read.
+   if (action === 'toggle' && target.active && !target.hidden) return target.hide ? 'minimized' : 'restored-no-focus';
+   return target.activateWithOptions(3) ? 'restored' : 'restored-no-focus';
+ }
+diff --git a/src/main.mjs b/src/main.mjs
+index 8cd8d4e..7d45c6f 100644
+--- a/src/main.mjs
++++ b/src/main.mjs
+@@ -193,7 +193,7 @@ async function openChatGPT(action = 'toggle') {
+   try {
+     const code = await controlChatGPT({ action, appPath: prefs.appPath, sourceDir: here });
+     const message = ({ minimized: 'ChatGPT 已收起', restored: 'ChatGPT 已唤起', launched: '正在启动 ChatGPT…',
+-      'restored-no-focus': '已恢复 ChatGPT，Windows 未允许自动切换焦点' })[code] || '已发送打开请求';
++      'restored-no-focus': '已恢复 ChatGPT，但系统未允许自动切换焦点' })[code] || '已发送打开请求';
+     status(message);
+     return { message };
+   } catch (error) {
+diff --git a/src/vendor/gpt-niang/usage.mjs b/src/vendor/gpt-niang/usage.mjs
+index 9e4bdc3..1c11bf1 100644
+--- a/src/vendor/gpt-niang/usage.mjs
++++ b/src/vendor/gpt-niang/usage.mjs
+@@ -64,7 +64,7 @@ export function accountFingerprint(account) {
+ 
+ // The desktop app replaces its hash-named CLI folder during updates. Resolve
+ // the executable on every refresh rather than pinning the install-time path.
+-export function resolveCodexExecutable(configuredPath,{env=process.env,platform=process.platform}={}) {
++export function resolveCodexExecutable(configuredPath,{env=process.env,platform=process.platform,applicationsDir='/Applications'}={}) {
+   const isFile=file=>{try{return fs.statSync(file).isFile();}catch{return false;}};
+   if(typeof configuredPath==='string' && isFile(configuredPath))return configuredPath;
+   const executable=platform==='win32'?'codex.exe':'codex';
+@@ -72,8 +72,10 @@ export function resolveCodexExecutable(configuredPath,{env=process.env,platform=
+     // Finder launches with a minimal PATH. Prefer the CLI shipped with the app.
+     // An explicit app root also lets tests isolate themselves from real logins.
+     const applications=env.GPT_NIANG_CODEX_APP?[env.GPT_NIANG_CODEX_APP]:[
+-      '/Applications/Codex.app',
+-      ...(env.HOME?[path.join(env.HOME,'Applications','Codex.app')]:[])
++      path.join(applicationsDir,'Codex.app'),
++      ...(env.HOME?[path.join(env.HOME,'Applications','Codex.app')]:[]),
++      path.join(applicationsDir,'ChatGPT.app'),
++      ...(env.HOME?[path.join(env.HOME,'Applications','ChatGPT.app')]:[])
+     ];
+     for(const app of applications){
+       for(const relative of ['Contents/Resources/codex-cli/bin/codex','Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex','Contents/Resources/codex']){
+diff --git a/test/platform.test.mjs b/test/platform.test.mjs
+index 738e8eb..8d95ff4 100644
+--- a/test/platform.test.mjs
++++ b/test/platform.test.mjs
+@@ -19,6 +19,16 @@ test('macOS Finder minimal PATH resolves the bundled Codex executable', async ()
+   } finally { await rm(fixture,{recursive:true,force:true}); }
+ });
+ 
++test('macOS resolves the Codex CLI bundled in ChatGPT.app', async () => {
++  const fixture = await mkdtemp(join(tmpdir(), 'companion-chatgpt-cli-test-'));
++  try {
++    const bin = join(fixture, 'Applications', 'ChatGPT.app', 'Contents', 'Resources', 'codex-cli', 'CodexCLI.app', 'Contents', 'MacOS');
++    await mkdir(bin, { recursive: true });
++    await writeFile(join(bin, 'codex'), 'fixture');
++    assert.equal(resolveCodexExecutable('', { platform: 'darwin', env: { HOME: fixture, PATH: '' }, applicationsDir: join(fixture, 'system') }), join(bin, 'codex'));
++  } finally { await rm(fixture, { recursive: true, force: true }); }
++});
++
+ test('Windows adapter preserves the fixed script and passes user paths as environment only', async () => {
+   const file = 'C:\\Apps\\测试 $ x\\ChatGPT.exe';
+   const result = await controlChatGPT({ platform: 'win32', appPath: file, action: 'toggle', sourceDir: 'src', run: async (program, args, options) => {
+@@ -40,11 +50,17 @@ test('macOS controller uses argument arrays and launches .app only when not runn
+ });
+ test('macOS JXA branches target only ChatGPT or the configured app path', async () => {
+   const source = await readFile(new URL('../src/chatgpt-mac.js', import.meta.url), 'utf8');
+-  const target = { bundleIdentifier: 'com.openai.chat', localizedName: 'ChatGPT', bundleURL: { path: '/Applications/ChatGPT.app' }, active: true, hidden: false, hide: true, activateWithOptions: flags => flags === 3 };
++  let hideCalls = 0;
++  const target = { bundleIdentifier: 'com.openai.chat', localizedName: 'ChatGPT', bundleURL: { path: '/Applications/ChatGPT.app' }, active: true, hidden: false,
++    get hide() { hideCalls++; this.hidden = true; this.active = false; return true; },
++    activateWithOptions(flags) { this.hidden = false; this.active = true; return flags === 3; } };
+   const context = vm.createContext({ ObjC: { import() {}, unwrap: value => value }, $: { NSWorkspace: { sharedWorkspace: { runningApplications: { count: 1, objectAtIndex: () => target } } } } });
+   vm.runInContext(source, context);
+   assert.equal(context.run(['toggle', '']), 'minimized');
++  assert.equal(hideCalls, 1);
++  assert.equal(target.hidden, true);
+   assert.equal(context.run(['show', '']), 'restored');
++  assert.equal(target.hidden, false);
+   assert.equal(context.run(['toggle', '/Applications/Other.app']), 'not-running');
+   assert.deepEqual(loginSettings('darwin', '/unused'), {});
+ });

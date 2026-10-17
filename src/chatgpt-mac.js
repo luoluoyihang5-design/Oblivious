@@ -17,6 +17,7 @@ function run(argv) {
     }
   }
   if (!target) return 'not-running';
+  // JXA invokes zero-argument Objective-C selectors when their properties are read.
   if (action === 'toggle' && target.active && !target.hidden) return target.hide ? 'minimized' : 'restored-no-focus';
   return target.activateWithOptions(3) ? 'restored' : 'restored-no-focus';
 }

@@ -9,6 +9,7 @@ import { createClickRouter } from './click-router.mjs';
 import { createUsageService } from './usage-service.mjs';
 import { controlChatGPT, loginSettings } from './platform.mjs';
 import { initialBubbleSize, fitBubbleSize } from './bubble-layout.mjs';
+import { createAutoSleep } from './auto-sleep.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const asset = name => join(here, '../assets', name);
@@ -20,6 +21,15 @@ let orb, settings, tray, prefs = { ...defaults }, petData = '', drag, dragTimer,
 let queue = Promise.resolve(), busy = false, saveError = '';
 let bubble, bubbleData, bubbleTimer, lastQuoteId = '', bubbleRevision = 0, greetingPending = true;
 let bubbleSize = initialBubbleSize(), bubbleLayoutRevision = 0;
+let petMenuOpen = false, pendingMenuAction;
+const autoSleep = createAutoSleep({
+  onSleep: () => { if (isAlive(orb)) orb.webContents.send('companion:action', { name: 'sleep', persistent: true }); },
+  onWake: () => { if (isAlive(orb)) orb.webContents.send('companion:action', { name: null }); },
+});
+function syncAutoSleep() {
+  autoSleep.configure({ enabled: prefs.autoSleepEnabled, minutes: prefs.autoSleepMinutes,
+    eligible: !!(isAlive(orb) && orb.isVisible() && prefs.mode === 'pet' && !prefs.customPet && !drag && !petMenuOpen) });
+}
 const clicks = createClickRouter({
   single: () => { void openChatGPT('toggle').catch(() => {}); },
   double: () => { advanceBubble(); },
@@ -77,7 +87,10 @@ async function showUsage() {
   showBubble({ kind: 'quota', ...result });
 }
 function interact(name) {
-  if (!Object.hasOwn(actions, name)) return;
+  if (!Object.hasOwn(actions, name) || actions[name].enabled === false) return;
+  if (petMenuOpen) { pendingMenuAction = name; return; }
+  autoSleep.touch();
+  if (name === 'sleep') { syncAutoSleep(); autoSleep.sleep(); return; }
   if (isAlive(orb)) orb.webContents.send('companion:action', { name });
 }
 const configPath = () => join(app.getPath('userData'), 'preferences.json');
@@ -98,6 +111,7 @@ function persist() {
   return queue;
 }
 function publish() {
+  syncAutoSleep();
   for (const win of [orb, settings]) if (isAlive(win)) win.webContents.send('companion:changed', publicState());
 }
 function status(message, error = false) {
@@ -157,7 +171,7 @@ function menuItems() {
     { type: 'separator' },
     { label: 'ChatGPT 图标球', type: 'radio', checked: prefs.mode === 'orb', click: () => void update({ mode: 'orb' }) },
     { label: '小龙娘桌宠', type: 'radio', checked: prefs.mode === 'pet', click: () => void update({ mode: 'pet' }) },
-    { label: '动作', enabled: prefs.mode === 'pet' && !prefs.customPet, submenu: Object.entries(actions).map(([name, action]) => ({ label: action.label, click: () => interact(name) })) },
+    { label: '动作', enabled: prefs.mode === 'pet' && !prefs.customPet, submenu: Object.entries(actions).filter(([, action]) => action.enabled !== false).map(([name, action]) => ({ label: action.label, click: () => interact(name) })) },
     { label: '查看 Codex 额度', enabled: prefs.quotaEnabled, click: () => void showUsage() },
     { label: '说句话', enabled: prefs.bubbleEnabled, click: () => say() },
     { label: '外观与设置…', click: openSettings },
@@ -169,6 +183,7 @@ function menuItems() {
   ];
 }
 async function update(patch) {
+  autoSleep.touch();
   const next = patchPreferences(prefs, patch);
   if (next.launchAtLogin !== prefs.launchAtLogin) {
     if (!['win32', 'darwin'].includes(process.platform) || !app.isPackaged) throw new Error('登录启动需要打包后的 Windows 或 macOS 版本');
@@ -184,7 +199,7 @@ async function update(patch) {
   hideBubble();
   layout();
   await persist();
-  rebuildMenu(); publish();
+  rebuildMenu(); publish(); syncAutoSleep();
   return { state: publicState() };
 }
 async function openChatGPT(action = 'toggle') {
@@ -193,7 +208,7 @@ async function openChatGPT(action = 'toggle') {
   try {
     const code = await controlChatGPT({ action, appPath: prefs.appPath, sourceDir: here });
     const message = ({ minimized: 'ChatGPT 已收起', restored: 'ChatGPT 已唤起', launched: '正在启动 ChatGPT…',
-      'restored-no-focus': '已恢复 ChatGPT，Windows 未允许自动切换焦点' })[code] || '已发送打开请求';
+      'restored-no-focus': '已恢复 ChatGPT，但系统未允许自动切换焦点' })[code] || '已发送打开请求';
     status(message);
     return { message };
   } catch (error) {
@@ -218,6 +233,7 @@ function stopDrag(cancel = false, pointer) {
   clearInterval(dragTimer); dragTimer = undefined;
   if (!drag) return;
   const active = drag; drag = undefined;
+  autoSleep.touch(); syncAutoSleep();
   if (!isAlive(orb)) return;
   const point = pointerPosition(pointer);
   // Mouseup can arrive before the 16ms poll, especially on a short quick drag.
@@ -240,9 +256,11 @@ function stopDrag(cancel = false, pointer) {
 }
 function startDrag(pointer) {
   stopDrag(true);
+  autoSleep.touch();
   if (!isAlive(orb)) return;
   orb.setIgnoreMouseEvents(false);
   drag = { cursor: pointerPosition(pointer), bounds: orb.getBounds(), moved: false, start: Date.now() };
+  syncAutoSleep();
   dragTimer = setInterval(() => {
     if (!drag || !isAlive(orb)) return stopDrag(true);
     if (Date.now() - drag.start > 60000) return stopDrag(true);
@@ -271,7 +289,7 @@ function handle(channel, kind, fn) {
 }
 handle('state', null, () => ({ state: publicState(), launchError: lastLaunchError }));
 handle('greeting', 'orb', () => {
-  const action = greetingPending && prefs.mode === 'pet' && !prefs.customPet ? 'wave' : null;
+  const action = greetingPending && actions.wave.enabled !== false && prefs.mode === 'pet' && !prefs.customPet ? 'wave' : null;
   greetingPending = false;
   return { action };
 });
@@ -351,7 +369,15 @@ handle('reset-pet', 'settings', async () => {
   prefs.customPet = false; petData = ''; layout(); await persist(); publish(); return { state: publicState() };
 });
 ipcMain.on('companion:settings', event => { if (from(event, 'orb')) openSettings(); });
-ipcMain.on('companion:menu', event => { if (from(event, 'orb')) { stopDrag(true); orb.setIgnoreMouseEvents(false); Menu.buildFromTemplate(menuItems()).popup({ window: orb }); } });
+ipcMain.on('companion:menu', event => { if (from(event, 'orb')) {
+  stopDrag(true); autoSleep.touch(); petMenuOpen = true; syncAutoSleep(); orb.setIgnoreMouseEvents(false);
+  Menu.buildFromTemplate(menuItems()).popup({ window: orb, callback: () => {
+    petMenuOpen = false; autoSleep.touch(); syncAutoSleep();
+    const selected = pendingMenuAction; pendingMenuAction = undefined;
+    if (selected) interact(selected);
+  } });
+} });
+ipcMain.on('companion:activity', event => { if (from(event, 'orb')) autoSleep.touch(); });
 ipcMain.on('companion:drag-start', (event, point) => { if (from(event, 'orb')) startDrag(point); });
 ipcMain.on('companion:drag-end', (event, payload) => { if (from(event, 'orb')) stopDrag(payload === true || payload?.cancel === true, payload?.point); });
 ipcMain.on('companion:pass-through', (event, pass) => {
@@ -361,7 +387,7 @@ if (locked) {
   app.on('second-instance', () => { showOrb(); openSettings(); });
   app.on('window-all-closed', () => {});
   app.on('activate', showOrb);
-  app.on('before-quit', () => { clearInterval(dragTimer); clearTimeout(persistTimer); clicks.cancel(); hideBubble(); });
+  app.on('before-quit', () => { autoSleep.destroy(); clearInterval(dragTimer); clearTimeout(persistTimer); clicks.cancel(); hideBubble(); });
   // Prevent app.exit from racing the final atomic settings write.
   let flushed = false;
   app.on('will-quit', event => {
@@ -389,7 +415,8 @@ if (locked) {
   layout();
   if (process.platform === 'darwin') { orb.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); app.dock?.hide(); }
   orb.once('ready-to-show', showOrb);
-  orb.on('hide', () => { stopDrag(true); hideBubble(); });
+  orb.on('hide', () => { stopDrag(true); hideBubble(); syncAutoSleep(); });
+  orb.on('show', syncAutoSleep);
   orb.on('move', positionBubble);
   void orb.loadFile(asset('floating.html'));
   tray = new Tray(process.platform === 'darwin' ? nativeImage.createEmpty() : nativeImage.createFromPath(asset('chatgpt.png')).resize({ width: 20, height: 20 }));

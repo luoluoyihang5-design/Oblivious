@@ -22,6 +22,6 @@ dragon-wave.png 和 dragon-sleep.png 使用内置 imagegen 工具生成，以本
 
 提示词摘要：单个完整透明桌宠 sprite；保持原角色、服装和绘画风格；招手姿态一手举在脸旁、张手微笑；打盹姿态闭眼坐下、双手置于膝上、翅膀收拢；不添加文字、背景或地面投影。
 
-0.4.4 起，当前招手 dragon-wave.gif 使用内置 imagegen 重新生成8帧手臂/上半身动作，以固定脚底和裙摆的方式组装为透明 GIF；不是骨骼动画，也不靠 CSS 全身旋转模拟招手。完整提示词见 generated_images/wave-natural-prompt.json。眨眼、拖拽扇翅和边缘探头沿用原项目 GIF。历史生成素材保留作来源记录，被移除的动作不再播放。
+0.4.4 的历史招手 dragon-wave.gif 使用内置 imagegen 生成8帧手臂/上半身动作，0.4.6 已停用，保留代码与历史素材等待新版替换。完整提示词见 generated_images/wave-natural-prompt.json。眨眼、拖拽扇翅和边缘探头沿用原项目 GIF。历史生成素材保留作来源记录，被移除的动作不再播放。
 
 其余原素材及原项目许可沿用 LICENSE 与原项目来源声明。ChatGPT 名称及图标属于 OpenAI，本项目非官方。

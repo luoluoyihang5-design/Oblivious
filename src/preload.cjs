@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('companion', Object.freeze({
   resetPosition: () => ipcRenderer.invoke('companion:reset-position'),
   usage: () => ipcRenderer.invoke('companion:usage'),
   greeting: () => ipcRenderer.invoke('companion:greeting'),
+  activity: () => ipcRenderer.send('companion:activity'),
   bubbleAction: action => ipcRenderer.invoke('companion:bubble-action', action),
   bubbleSize: size => ipcRenderer.invoke('companion:bubble-size', size),
   projectHome: () => ipcRenderer.invoke('companion:project-home'),

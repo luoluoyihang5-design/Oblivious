@@ -1,6 +1,6 @@
-# 开发说明 · 0.4.5（正式名称与 README 待定）
+# 开发说明 · 0.4.6（正式名称与 README 待定）
 
-独立 Electron 桌面伴侣：经典悬浮球、小龙娘桌宠、右键动作、启动招手、33 句可编辑台词与 Codex 额度气泡。当前动作触发规则与自然招手见 [RELEASE-0.4.4.md](RELEASE-0.4.4.md)，吸附修正见 [RELEASE-0.4.1.md](RELEASE-0.4.1.md)，主要功能说明见 [RELEASE-0.4.0.md](RELEASE-0.4.0.md)。
+独立 Electron 桌面伴侣：经典悬浮球、小龙娘桌宠、右键休眠、可选自动休眠、33 句可编辑台词与 Codex 额度气泡。当前版本停用招手但保留代码，自动休眠和 Mac 补丁说明见 [RELEASE-0.4.6.md](RELEASE-0.4.6.md)。吸附修正见 [RELEASE-0.4.1.md](RELEASE-0.4.1.md)，主要功能说明见 [RELEASE-0.4.0.md](RELEASE-0.4.0.md)。
 
 ## 运行
 

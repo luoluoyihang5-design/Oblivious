@@ -19,6 +19,16 @@ test('macOS Finder minimal PATH resolves the bundled Codex executable', async ()
   } finally { await rm(fixture,{recursive:true,force:true}); }
 });
 
+test('macOS resolves the Codex CLI bundled in ChatGPT.app', async () => {
+  const fixture = await mkdtemp(join(tmpdir(), 'companion-chatgpt-cli-test-'));
+  try {
+    const bin = join(fixture, 'Applications', 'ChatGPT.app', 'Contents', 'Resources', 'codex-cli', 'CodexCLI.app', 'Contents', 'MacOS');
+    await mkdir(bin, { recursive: true });
+    await writeFile(join(bin, 'codex'), 'fixture');
+    assert.equal(resolveCodexExecutable('', { platform: 'darwin', env: { HOME: fixture, PATH: '' }, applicationsDir: join(fixture, 'system') }), join(bin, 'codex'));
+  } finally { await rm(fixture, { recursive: true, force: true }); }
+});
+
 test('Windows adapter preserves the fixed script and passes user paths as environment only', async () => {
   const file = 'C:\\Apps\\测试 $ x\\ChatGPT.exe';
   const result = await controlChatGPT({ platform: 'win32', appPath: file, action: 'toggle', sourceDir: 'src', run: async (program, args, options) => {
@@ -40,11 +50,17 @@ test('macOS controller uses argument arrays and launches .app only when not runn
 });
 test('macOS JXA branches target only ChatGPT or the configured app path', async () => {
   const source = await readFile(new URL('../src/chatgpt-mac.js', import.meta.url), 'utf8');
-  const target = { bundleIdentifier: 'com.openai.chat', localizedName: 'ChatGPT', bundleURL: { path: '/Applications/ChatGPT.app' }, active: true, hidden: false, hide: true, activateWithOptions: flags => flags === 3 };
+  let hideCalls = 0;
+  const target = { bundleIdentifier: 'com.openai.chat', localizedName: 'ChatGPT', bundleURL: { path: '/Applications/ChatGPT.app' }, active: true, hidden: false,
+    get hide() { hideCalls++; this.hidden = true; this.active = false; return true; },
+    activateWithOptions(flags) { this.hidden = false; this.active = true; return flags === 3; } };
   const context = vm.createContext({ ObjC: { import() {}, unwrap: value => value }, $: { NSWorkspace: { sharedWorkspace: { runningApplications: { count: 1, objectAtIndex: () => target } } } } });
   vm.runInContext(source, context);
   assert.equal(context.run(['toggle', '']), 'minimized');
+  assert.equal(hideCalls, 1);
+  assert.equal(target.hidden, true);
   assert.equal(context.run(['show', '']), 'restored');
+  assert.equal(target.hidden, false);
   assert.equal(context.run(['toggle', '/Applications/Other.app']), 'not-running');
   assert.deepEqual(loginSettings('darwin', '/unused'), {});
 });

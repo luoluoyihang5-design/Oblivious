@@ -64,7 +64,7 @@ export function accountFingerprint(account) {
 
 // The desktop app replaces its hash-named CLI folder during updates. Resolve
 // the executable on every refresh rather than pinning the install-time path.
-export function resolveCodexExecutable(configuredPath,{env=process.env,platform=process.platform}={}) {
+export function resolveCodexExecutable(configuredPath,{env=process.env,platform=process.platform,applicationsDir='/Applications'}={}) {
   const isFile=file=>{try{return fs.statSync(file).isFile();}catch{return false;}};
   if(typeof configuredPath==='string' && isFile(configuredPath))return configuredPath;
   const executable=platform==='win32'?'codex.exe':'codex';
@@ -72,8 +72,10 @@ export function resolveCodexExecutable(configuredPath,{env=process.env,platform=
     // Finder launches with a minimal PATH. Prefer the CLI shipped with the app.
     // An explicit app root also lets tests isolate themselves from real logins.
     const applications=env.GPT_NIANG_CODEX_APP?[env.GPT_NIANG_CODEX_APP]:[
-      '/Applications/Codex.app',
-      ...(env.HOME?[path.join(env.HOME,'Applications','Codex.app')]:[])
+      path.join(applicationsDir,'Codex.app'),
+      ...(env.HOME?[path.join(env.HOME,'Applications','Codex.app')]:[]),
+      path.join(applicationsDir,'ChatGPT.app'),
+      ...(env.HOME?[path.join(env.HOME,'Applications','ChatGPT.app')]:[])
     ];
     for(const app of applications){
       for(const relative of ['Contents/Resources/codex-cli/bin/codex','Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex','Contents/Resources/codex']){

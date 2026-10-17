@@ -1,5 +1,5 @@
 const api = window.companion, $ = selector => document.querySelector(selector);
-const toggles = ['alwaysOnTop', 'snapToEdge', 'launchAtLogin', 'dragAnimation', 'breathing', 'clickEffects', 'bubbleEnabled', 'quotaEnabled'];
+const toggles = ['alwaysOnTop', 'snapToEdge', 'launchAtLogin', 'dragAnimation', 'breathing', 'clickEffects', 'bubbleEnabled', 'quotaEnabled', 'autoSleepEnabled'];
 let previewTimer;
 let current, inFlight = Promise.resolve();
 let quoteDraft = [], quoteEditing = 0, quoteDirty = false;
@@ -80,6 +80,12 @@ function render(state) {
   for (const key of toggles) $('#' + key).checked = state[key];
   $('#quoteDoubleAction').value = state.quoteDoubleAction || 'next';
   $('#bubbleSeconds').value = state.bubbleSeconds ?? 5;
+  const sleepMinutes = state.autoSleepMinutes ?? 5;
+  $('#autoSleepPreset').value = [5, 10, 15, 30].includes(sleepMinutes) ? String(sleepMinutes) : 'custom';
+  $('#autoSleepMinutes').value = sleepMinutes;
+  $('#autoSleepCustomRow').hidden = $('#autoSleepPreset').value !== 'custom';
+  $('#autoSleepPreset').disabled = !state.autoSleepEnabled;
+  $('#autoSleepMinutes').disabled = !state.autoSleepEnabled;
   renderQuoteList(state.quotes || []);
   for (const key of ['aboutAuthor', 'aboutContact', 'aboutWebsite']) if (document.activeElement !== $('#' + key)) $('#' + key).value = state[key] || '';
   $('#test-usage').disabled = !state.quotaEnabled;
@@ -134,6 +140,17 @@ $('#open-app').addEventListener('click', () => operation(() => api.open()));
 $('#reset-position').addEventListener('click', () => operation(() => api.resetPosition(), '挂件已回到主屏幕'));
 $('#quoteDoubleAction').addEventListener('change', event => { const value = event.target.value; void operation(() => api.update({ quoteDoubleAction: value })); });
 $('#bubbleSeconds').addEventListener('change', event => { const value = Number(event.target.value); void operation(() => api.update({ bubbleSeconds: value })); });
+$('#autoSleepPreset').addEventListener('change', event => {
+  const value = event.target.value;
+  $('#autoSleepCustomRow').hidden = value !== 'custom';
+  if (value === 'custom') { $('#autoSleepMinutes').focus(); return; }
+  void operation(() => api.update({ autoSleepMinutes: Number(value) }));
+});
+$('#autoSleepMinutes').addEventListener('change', event => {
+  const value = Number(event.target.value);
+  if (!Number.isInteger(value) || value < 1 || value > 1440) { status('休眠时长需为 1–1440 的整数分钟', true); return; }
+  void operation(() => api.update({ autoSleepMinutes: value }));
+});
 $('#quote-list').addEventListener('change', () => {
   const quotes = [...$('#quote-list').children].map(row => ({ id: row.dataset.quoteId, text: row.querySelector('[type=text]').value, enabled: row.querySelector('[type=checkbox]').checked }));
   saveQuoteList(quotes);

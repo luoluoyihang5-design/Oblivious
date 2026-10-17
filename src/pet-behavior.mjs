@@ -1,6 +1,7 @@
 export const actions = Object.freeze({
-  wave: { label: '招手', duration: 2400, art: 'dragon-wave.gif' },
-  sleep: { label: '打盹', duration: 7000, art: 'dragon-sleep.png' },
+  // Reserved for a replacement asset. Re-enable only after the new wave is approved.
+  wave: { label: '招手', duration: 2400, art: 'dragon-wave.gif', enabled: false },
+  sleep: { label: '休眠', duration: 7000, art: 'dragon-sleep.png' },
 });
 const phrases = Object.freeze({
   wave: ['我在这里。', '回来啦，今天也一起加油。'],
