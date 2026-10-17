@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
 const platform = process.argv[2] || process.platform;
-const arch = process.argv[3] || process.arch;
+// A Windows package built on an Apple Silicon Mac should still target common x64 PCs.
+const arch = process.argv[3] || (platform === 'win32' ? 'x64' : process.arch);
 if (!['darwin', 'win32'].includes(platform) || !['arm64', 'x64'].includes(arch)) throw new Error('支持 darwin/win32 与 arm64/x64');
 if (platform === 'darwin' && process.platform !== 'darwin') throw new Error('请在 macOS 执行 Mac 构建，以保留 .app 符号链接并完成本地签名。');
 const out = join(root, 'dist');

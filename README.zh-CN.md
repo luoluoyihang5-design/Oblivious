@@ -26,7 +26,18 @@ npm start
 npm test
 ```
 
-功能、使用细节和验证范围见 [RELEASE-0.4.0.md](RELEASE-0.4.0.md)。Windows 本机已完成更新并保留原偏好，旧版已备份。
+## Windows 打包
+
+```sh
+npm ci
+npm run build:win
+```
+
+默认生成 x64 版，输出到 `dist/ChatGPT Companion-win32-x64/`；需要 Windows ARM64 版时执行 `npm run build:win -- arm64`。产物是包含 EXE 的程序目录，不是安装包。更新源码不会自动更新电脑上已安装的程序。
+
+仓库的“Build Windows”工作流可手动执行测试和 x64 打包，并提供下载产物；它不能代替在 Windows 电脑上检查界面与操作。
+
+功能、使用细节和此前的 Windows 本机验证记录见 [RELEASE-0.4.0.md](RELEASE-0.4.0.md)。本次修改尚未经过 Windows 实机验证。
 
 ## 目录
 
