@@ -1,4 +1,4 @@
-import { actions } from './pet-behavior.mjs';
+import { actions, actionForVisibility } from './pet-behavior.mjs';
 import { removeExteriorWhite } from './logo-matte.mjs';
 const api = window.companion, button = document.querySelector('#mascot'), image = document.querySelector('#art');
 const toast = document.querySelector('#toast');
@@ -73,6 +73,9 @@ function visibleAt(x, y) {
 }
 function render(state) {
   current = state;
+  // Sleep is owned by the main process, so it survives page occlusion and reloads.
+  if (state.sleeping) clearTimeout(actionTimer);
+  activeAction = actionForVisibility(activeAction, state.sleeping, false);
   mode = state.mode;
   dockEdge = state.isDragging ? null : state.dockEdge;
   const petDocked = mode === 'pet' && dockEdge && !state.customPet && !activeAction;
@@ -87,11 +90,14 @@ function render(state) {
     state.customPet && state.petData ? state.petData : new URL(
       state.isDragging ? (state.dragAnimation ? '../assets/dragon-drag.gif' : '../assets/dragon-drag.png') :
       petDocked ? '../assets/dragon-peek.gif' : activeAction && actions[activeAction].art ? '../assets/' + actions[activeAction].art : '../assets/dragon-idle.gif', import.meta.url).href;
-  setArt(activeAction && actions[activeAction].art?.endsWith('.gif') ? next + '?play=' + actionSerial : next);
+  const art = activeAction && actions[activeAction].art?.endsWith('.gif') ? next + '?play=' + actionSerial : next;
+  const artChanged = desiredArt !== art;
+  setArt(art);
   image.alt = mode === 'orb' ? 'ChatGPT' : petDocked ? '知知从边缘探头' : '小龙娘桌宠';
   button.title = '单击唤起 / 收起 ChatGPT · 双击切换额度与台词 · 拖动移动 · 右键菜单';
   button.setAttribute('aria-label', button.title);
-  setPass(false);
+  // A settings refresh that keeps the same art must not block clicks through transparent pixels.
+  if (artChanged) setPass(false);
 }
 const logo = new Image();
 logo.onload = () => {
@@ -124,11 +130,18 @@ button.addEventListener('keydown', event => { api.activity(); if (event.key === 
 button.addEventListener('wheel', () => api.activity(), { passive: true });
 window.addEventListener('contextmenu', event => { event.preventDefault(); if (visibleAt(event.clientX, event.clientY)) api.menu(); });
 api.onState(render);
+api.onPassReset(() => { passthrough = false; api.passThrough(false); });
 api.onAction(({ name, persistent }) => {
   if (name === null) { clearTimeout(actionTimer); activeAction = ''; if (current) render(current); }
   else playAction(name, !persistent, persistent);
 });
-document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(actionTimer); activeAction = ''; } else if (current) render(current); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (!current?.sleeping) clearTimeout(actionTimer);
+    activeAction = actionForVisibility(activeAction, current?.sleeping, true);
+  }
+  else if (current) render(current);
+});
 reducedMotion.addEventListener('change', () => { if (current) render(current); });
 api.onStatus(({ message }) => {
   toast.textContent = message; toast.hidden = false;

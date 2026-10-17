@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('companion', Object.freeze({
   passThrough: value => ipcRenderer.send('companion:pass-through', value === true),
   open: () => ipcRenderer.invoke('companion:open'),
   onState: callback => { const listener = (_, state) => callback(state); ipcRenderer.on('companion:changed', listener); return () => ipcRenderer.removeListener('companion:changed', listener); },
+  onPassReset: callback => { const listener = () => callback(); ipcRenderer.on('companion:pass-reset', listener); return () => ipcRenderer.removeListener('companion:pass-reset', listener); },
   onAction: callback => { const listener = (_, action) => callback(action); ipcRenderer.on('companion:action', listener); return () => ipcRenderer.removeListener('companion:action', listener); },
   onBubble: callback => { const listener = (_, data) => callback(data); ipcRenderer.on('companion:bubble', listener); return () => ipcRenderer.removeListener('companion:bubble', listener); },
   onStatus: callback => { const listener = (_, status) => callback(status); ipcRenderer.on('companion:status', listener); return () => ipcRenderer.removeListener('companion:status', listener); },

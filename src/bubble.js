@@ -38,6 +38,7 @@ function render(data) {
   title.textContent = data.kind === 'quota' ? `Codex 额度${data.planLabel ? ' · ' + data.planLabel : ''}` : '知知';
   document.querySelector('#refresh').hidden = data.kind !== 'quota';
   document.querySelectorAll('[data-command="quota"]').forEach(button => { button.disabled = !!data.loading || data.quotaEnabled === false; });
+  document.querySelectorAll('[data-command="quote"]').forEach(button => { button.disabled = data.bubbleEnabled === false; });
   if (data.kind === 'quote') { content.append(node('p', 'quote', data.text)); return; }
   if (data.loading) { content.append(node('p', 'message', '正在读取额度……')); return; }
   if (!data.ok) { content.append(node('p', 'message', data.error || '当前账号未提供额度窗口。')); return; }
@@ -62,8 +63,6 @@ function render(data) {
 document.querySelectorAll('[data-command]').forEach(button => button.addEventListener('click', () => {
   void api.bubbleAction(button.dataset.command);
 }));
-document.body.addEventListener('pointerenter', () => void api.bubbleAction('hold'));
-document.body.addEventListener('pointerleave', () => void api.bubbleAction('leave'));
 api.onBubble(render);
 new ResizeObserver(fitContent).observe(content);
 window.addEventListener('resize', fitContent);

@@ -10,6 +10,7 @@ import { createUsageService } from './usage-service.mjs';
 import { controlChatGPT, loginSettings } from './platform.mjs';
 import { initialBubbleSize, fitBubbleSize } from './bubble-layout.mjs';
 import { createAutoSleep } from './auto-sleep.mjs';
+import { preferenceEffects } from './preference-effects.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const asset = name => join(here, '../assets', name);
@@ -23,8 +24,8 @@ let bubble, bubbleData, bubbleTimer, lastQuoteId = '', bubbleRevision = 0, greet
 let bubbleSize = initialBubbleSize(), bubbleLayoutRevision = 0;
 let petMenuOpen = false, pendingMenuAction;
 const autoSleep = createAutoSleep({
-  onSleep: () => { if (isAlive(orb)) orb.webContents.send('companion:action', { name: 'sleep', persistent: true }); },
-  onWake: () => { if (isAlive(orb)) orb.webContents.send('companion:action', { name: null }); },
+  onSleep: broadcastState,
+  onWake: broadcastState,
 });
 function syncAutoSleep() {
   autoSleep.configure({ enabled: prefs.autoSleepEnabled, minutes: prefs.autoSleepMinutes,
@@ -52,7 +53,7 @@ function scheduleBubbleHide() {
   bubbleTimer = setTimeout(hideBubble, prefs.bubbleSeconds * 1000);
 }
 function showBubble(data) {
-  data = { ...data, quotaEnabled: prefs.quotaEnabled, layoutRevision: ++bubbleLayoutRevision };
+  data = { ...data, quotaEnabled: prefs.quotaEnabled, bubbleEnabled: prefs.bubbleEnabled, layoutRevision: ++bubbleLayoutRevision };
   bubbleSize = initialBubbleSize(data);
   bubbleData = data;
   if (!isAlive(bubble)) {
@@ -64,6 +65,11 @@ function showBubble(data) {
     void bubble.loadFile(asset('bubble.html'));
   } else { bubble.webContents.send('companion:bubble', data); bubble.showInactive(); }
   positionBubble(); scheduleBubbleHide();
+}
+function refreshBubbleControls() {
+  if (!bubbleData) return;
+  bubbleData = { ...bubbleData, quotaEnabled: prefs.quotaEnabled, bubbleEnabled: prefs.bubbleEnabled, layoutRevision: ++bubbleLayoutRevision };
+  if (isAlive(bubble)) bubble.webContents.send('companion:bubble', bubbleData);
 }
 function say() {
   if (!prefs.bubbleEnabled) return;
@@ -95,7 +101,7 @@ function interact(name) {
 }
 const configPath = () => join(app.getPath('userData'), 'preferences.json');
 const petPath = () => join(app.getPath('userData'), 'pet-image.json');
-const publicState = () => ({ ...prefs, petData, isDragging: !!drag?.moved, platform: process.platform, packaged: app.isPackaged, saveError });
+const publicState = () => ({ ...prefs, petData, sleeping: autoSleep.sleeping, isDragging: !!drag?.moved, platform: process.platform, packaged: app.isPackaged, saveError });
 const isAlive = win => win && !win.isDestroyed();
 function persist() {
   const data = JSON.stringify(prefs, null, 2);
@@ -110,9 +116,12 @@ function persist() {
   });
   return queue;
 }
+function broadcastState() {
+  for (const win of [orb, settings]) if (isAlive(win)) win.webContents.send('companion:changed', publicState());
+}
 function publish() {
   syncAutoSleep();
-  for (const win of [orb, settings]) if (isAlive(win)) win.webContents.send('companion:changed', publicState());
+  broadcastState();
 }
 function status(message, error = false) {
   for (const win of [orb, settings]) if (isAlive(win)) win.webContents.send('companion:status', { message, error });
@@ -144,11 +153,16 @@ function layout(recenter = false) {
   orb.setAlwaysOnTop(prefs.alwaysOnTop, 'floating');
   orb.setOpacity(activeOpacity(prefs));
   prefs.position = { x: bounds.x, y: bounds.y };
-  orb.setIgnoreMouseEvents(false);
+  resetPassThrough();
   positionBubble();
 }
+function resetPassThrough() {
+  if (!isAlive(orb)) return;
+  orb.setIgnoreMouseEvents(false);
+  orb.webContents.send('companion:pass-reset');
+}
 function showOrb() {
-  if (isAlive(orb)) { orb.showInactive(); orb.setIgnoreMouseEvents(false); }
+  if (isAlive(orb)) { orb.showInactive(); resetPassThrough(); }
 }
 function openSettings() {
   if (process.platform === 'darwin') app.dock?.show();
@@ -183,7 +197,6 @@ function menuItems() {
   ];
 }
 async function update(patch) {
-  autoSleep.touch();
   const next = patchPreferences(prefs, patch);
   if (next.launchAtLogin !== prefs.launchAtLogin) {
     if (!['win32', 'darwin'].includes(process.platform) || !app.isPackaged) throw new Error('登录启动需要打包后的 Windows 或 macOS 版本');
@@ -192,14 +205,17 @@ async function update(patch) {
     const actual = app.getLoginItemSettings(options).openAtLogin;
     if (actual !== next.launchAtLogin) throw new Error('系统未接受登录启动设置');
   }
-  stopDrag(true);
-  clicks.cancel();
+  const effects = preferenceEffects(prefs, next, bubbleData);
+  if (effects.layout) { stopDrag(true); clicks.cancel(); }
   next.position = prefs.position;
   prefs = next;
-  hideBubble();
-  layout();
+  if (effects.hideBubble) hideBubble();
+  else if (effects.refreshBubble) refreshBubbleControls();
+  if (effects.layout) layout();
+  if (effects.rescheduleBubble) scheduleBubbleHide();
   await persist();
-  rebuildMenu(); publish(); syncAutoSleep();
+  if (effects.menu) rebuildMenu();
+  publish();
   return { state: publicState() };
 }
 async function openChatGPT(action = 'toggle') {
@@ -258,7 +274,7 @@ function startDrag(pointer) {
   stopDrag(true);
   autoSleep.touch();
   if (!isAlive(orb)) return;
-  orb.setIgnoreMouseEvents(false);
+  resetPassThrough();
   drag = { cursor: pointerPosition(pointer), bounds: orb.getBounds(), moved: false, start: Date.now() };
   syncAutoSleep();
   dragTimer = setInterval(() => {
@@ -321,7 +337,6 @@ handle('bubble-action', 'bubble', async action => {
   if (action === 'close') { bubbleData = undefined; hideBubble(); }
   else if (action === 'quota') await showUsage();
   else if (action === 'quote') say();
-  else if (action === 'hold' || action === 'leave') {} // Pointer interaction must not extend the configured lifetime.
   else throw new Error('未知气泡操作');
   return {};
 });
@@ -370,7 +385,7 @@ handle('reset-pet', 'settings', async () => {
 });
 ipcMain.on('companion:settings', event => { if (from(event, 'orb')) openSettings(); });
 ipcMain.on('companion:menu', event => { if (from(event, 'orb')) {
-  stopDrag(true); autoSleep.touch(); petMenuOpen = true; syncAutoSleep(); orb.setIgnoreMouseEvents(false);
+  stopDrag(true); autoSleep.touch(); petMenuOpen = true; syncAutoSleep(); resetPassThrough();
   Menu.buildFromTemplate(menuItems()).popup({ window: orb, callback: () => {
     petMenuOpen = false; autoSleep.touch(); syncAutoSleep();
     const selected = pendingMenuAction; pendingMenuAction = undefined;
