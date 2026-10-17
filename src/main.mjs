@@ -223,6 +223,7 @@ async function openChatGPT(action = 'toggle') {
   busy = true;
   try {
     const code = await controlChatGPT({ action, appPath: prefs.appPath, sourceDir: here });
+    lastLaunchError = '';
     const message = ({ minimized: 'ChatGPT 已收起', restored: 'ChatGPT 已唤起', launched: '正在启动 ChatGPT…',
       'restored-no-focus': '已恢复 ChatGPT，但系统未允许自动切换焦点' })[code] || '已发送打开请求';
     status(message);
